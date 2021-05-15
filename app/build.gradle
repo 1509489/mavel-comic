@@ -21,6 +21,7 @@ android {
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         each { buildType ->
             buildType.buildConfigField "String", "BASE_URL", "\"https://gateway.marvel.com/\""
+            buildType.buildConfigField "String", "Hash", "\"a08a65fe8f5a7b275cb86e1607e51a7d\""
         }
     }
 
