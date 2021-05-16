@@ -1,4 +1,8 @@
 <resources>
     <string name="app_name">Mavel Comics</string>
     <string name="title_item_detail">Item Detail</string>
-</resources></resources>
+    <string name="retry">Retry</string>
+    <string name="error_generic">Something went wrong. \nPlease try again</string>
+    <string name="no_results">No comic found. \nPlease try again</string>
+    <string name="home">Home</string>
+</resources>

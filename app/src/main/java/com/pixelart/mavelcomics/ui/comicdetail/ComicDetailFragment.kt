@@ -1,40 +1,46 @@
 package com.pixelart.mavelcomics.ui.comicdetail
 
+import android.graphics.drawable.Drawable
+import android.os.Build
 import android.os.Bundle
-import androidx.fragment.app.Fragment
+import android.text.Html
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.TextView
+import androidx.core.content.ContextCompat
+import androidx.fragment.app.Fragment
+import androidx.fragment.app.viewModels
+import androidx.lifecycle.Observer
+import androidx.navigation.fragment.findNavController
+import com.bumptech.glide.Glide
+import com.bumptech.glide.load.resource.drawable.DrawableTransitionOptions
+import com.bumptech.glide.request.target.CustomTarget
+import com.bumptech.glide.request.transition.Transition
+import com.pixelart.mavelcomics.R
+import com.pixelart.mavelcomics.common.toUrl
 import com.pixelart.mavelcomics.databinding.FragmentComicDetailBinding
-import com.pixelart.mavelcomics.placeholder.PlaceholderContent
+import com.pixelart.mavelcomics.datasource.NetworkResource
+import com.pixelart.mavelcomics.models.Comic
 import dagger.hilt.android.AndroidEntryPoint
+import eightbitlab.com.blurview.RenderScriptBlur
+
 
 @AndroidEntryPoint
 class ComicDetailFragment : Fragment() {
 
-    /**
-     * The placeholder content this fragment is presenting.
-     */
-    private var item: PlaceholderContent.PlaceholderItem? = null
-
-    lateinit var itemDetailTextView: TextView
-
     private var _binding: FragmentComicDetailBinding? = null
-
-    // This property is only valid between onCreateView and
-    // onDestroyView.
     private val binding get() = _binding!!
+
+    private val viewModel: ComicDetailViewModel by viewModels()
+
+    private lateinit var comicId: String
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
         arguments?.let {
-            if (it.containsKey(ARG_ITEM_ID)) {
-                // Load the placeholder content specified by the fragment
-                // arguments. In a real-world scenario, use a Loader
-                // to load content from a content provider.
-                item = PlaceholderContent.ITEM_MAP[it.getString(ARG_ITEM_ID)]
+            if (it.containsKey(ARG_COMIC_ID)) {
+                comicId = it.getString(ARG_COMIC_ID).orEmpty()
             }
         }
     }
@@ -43,31 +49,78 @@ class ComicDetailFragment : Fragment() {
         inflater: LayoutInflater, container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View? {
-
         _binding = FragmentComicDetailBinding.inflate(inflater, container, false)
-        val rootView = binding.root
-
-        binding.toolbarLayout?.title = item?.content
-
-        itemDetailTextView = binding.itemDetail
-        // Show the placeholder content as text in a TextView.
-        item?.let {
-            itemDetailTextView.text = it.details
-        }
-
-        return rootView
+        return binding.root
     }
 
-    companion object {
-        /**
-         * The fragment argument representing the item ID that this fragment
-         * represents.
-         */
-        const val ARG_ITEM_ID = "item_id"
+    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+        super.onViewCreated(view, savedInstanceState)
+        binding.apply {
+            homeButton.setOnClickListener { findNavController().navigateUp() }
+        }
+        observeComic()
+    }
+
+    private fun observeComic() {
+        viewModel.fetchComic(comicId).observe(viewLifecycleOwner, Observer { networkResource ->
+            when (networkResource) {
+                is NetworkResource.Loading -> {
+                }
+                is NetworkResource.Success -> networkResource.data?.let { comic ->
+                    binding.apply {
+                        setBackgroundImage(comic)
+                        incComicContent.tvComicTitle.text = comic.title
+                        incComicContent.tvComicDescription.text =
+                            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+                                Html.fromHtml(comic.description, Html.FROM_HTML_MODE_COMPACT)
+                            } else {
+                                Html.fromHtml(comic.description)
+                            }
+                    }
+                }
+                is NetworkResource.Error -> {
+
+                }
+            }
+        })
+    }
+
+    private fun setBackgroundImage(comic: Comic) {
+        Glide.with(requireContext())
+            .asDrawable()
+            .load(comic.thumbnail.toUrl())
+            .transition(DrawableTransitionOptions.withCrossFade())
+            .placeholder(R.drawable.home_background)
+            .into(object : CustomTarget<Drawable>() {
+                override fun onResourceReady(
+                    resource: Drawable,
+                    transition: Transition<in Drawable>?
+                ) {
+                    binding.incComicContent.scrollView.background = resource
+                }
+
+                override fun onLoadCleared(placeholder: Drawable?) {}
+            })
+        setupBlurView()
+    }
+
+    private fun setupBlurView() {
+        binding.incComicContent.blurView.apply {
+            setupWith(binding.incComicContent.scrollView)
+                .setFrameClearDrawable(binding.incComicContent.scrollView.background)
+                .setBlurAlgorithm(RenderScriptBlur(requireContext()))
+                .setBlurAutoUpdate(true)
+                .setOverlayColor(ContextCompat.getColor(requireContext(), R.color.blur_overlay))
+                .setHasFixedTransformationMatrix(true)
+        }
     }
 
     override fun onDestroyView() {
         super.onDestroyView()
         _binding = null
+    }
+
+    companion object {
+        const val ARG_COMIC_ID = "comicId"
     }
 }

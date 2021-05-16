@@ -10,7 +10,7 @@
         android:label="@string/title_item_detail"
         tools:layout="@layout/fragment_comic_detail">
         <argument
-            android:name="item_id"
+            android:name="comicId"
             android:defaultValue=""
             app:argType="string" />
     </fragment>
