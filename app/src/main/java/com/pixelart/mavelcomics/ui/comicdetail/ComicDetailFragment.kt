@@ -33,7 +33,8 @@ class ComicDetailFragment : Fragment() {
 
     private val viewModel: ComicDetailViewModel by viewModels()
 
-    private lateinit var comicId: String
+    private var comicId: String = ""
+    private var comicClicked: Boolean = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -41,6 +42,9 @@ class ComicDetailFragment : Fragment() {
         arguments?.let {
             if (it.containsKey(ARG_COMIC_ID)) {
                 comicId = it.getString(ARG_COMIC_ID).orEmpty()
+            }
+            if (it.containsKey(ARG_COMIC_CLICKED)) {
+                comicClicked = it.getBoolean(ARG_COMIC_CLICKED)
             }
         }
     }
@@ -56,7 +60,8 @@ class ComicDetailFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         binding.apply {
-            homeButton.setOnClickListener { findNavController().navigateUp() }
+            homeButton?.setOnClickListener { findNavController().navigateUp() }
+            incStateView.btnRetry.setOnClickListener { observeComic() }
         }
         observeComic()
     }
@@ -64,22 +69,44 @@ class ComicDetailFragment : Fragment() {
     private fun observeComic() {
         viewModel.fetchComic(comicId).observe(viewLifecycleOwner, Observer { networkResource ->
             when (networkResource) {
-                is NetworkResource.Loading -> {
+                is NetworkResource.Loading -> binding.incStateView.apply {
+                    pbLoading.visibility = if (comicClicked) View.VISIBLE else View.GONE
+                    tvMessage.visibility = View.GONE
+                    btnRetry.visibility = View.GONE
                 }
-                is NetworkResource.Success -> networkResource.data?.let { comic ->
-                    binding.apply {
-                        setBackgroundImage(comic)
-                        incComicContent.tvComicTitle.text = comic.title
-                        incComicContent.tvComicDescription.text =
-                            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
-                                Html.fromHtml(comic.description, Html.FROM_HTML_MODE_COMPACT)
-                            } else {
-                                Html.fromHtml(comic.description)
-                            }
+                is NetworkResource.Success -> {
+                    binding.incStateView.pbLoading.visibility = View.GONE
+
+                    if (networkResource.data == null) {
+                        binding.incStateView.apply {
+                            tvMessage.text = getString(R.string.no_results)
+                            tvMessage.visibility = View.VISIBLE
+                            btnRetry.visibility = View.VISIBLE
+                        }
+                    } else {
+                        binding.apply {
+                            ibStar.visibility = View.VISIBLE
+                            setBackgroundImage(networkResource.data)
+                            incComicContent.tvComicTitle.text = networkResource.data.title
+                            incComicContent.tvComicDescription.text =
+                                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+                                    Html.fromHtml(
+                                        networkResource.data.description,
+                                        Html.FROM_HTML_MODE_COMPACT
+                                    )
+                                } else {
+                                    Html.fromHtml(networkResource.data.description)
+                                }
+                        }
                     }
                 }
-                is NetworkResource.Error -> {
-
+                is NetworkResource.Error -> binding.incStateView.apply {
+                    if (comicClicked) {
+                        pbLoading.visibility = View.GONE
+                        btnRetry.visibility = View.VISIBLE
+                        tvMessage.visibility = View.VISIBLE
+                        tvMessage.text = networkResource.exception.localizedMessage
+                    }
                 }
             }
         })
@@ -96,7 +123,7 @@ class ComicDetailFragment : Fragment() {
                     resource: Drawable,
                     transition: Transition<in Drawable>?
                 ) {
-                    binding.incComicContent.scrollView.background = resource
+                    binding.itemDetailContainer.background = resource
                 }
 
                 override fun onLoadCleared(placeholder: Drawable?) {}
@@ -122,5 +149,6 @@ class ComicDetailFragment : Fragment() {
 
     companion object {
         const val ARG_COMIC_ID = "comicId"
+        const val ARG_COMIC_CLICKED = "comicClicked"
     }
 }

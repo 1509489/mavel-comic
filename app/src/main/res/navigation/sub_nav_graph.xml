@@ -13,6 +13,10 @@
             android:name="comicId"
             android:defaultValue=""
             app:argType="string" />
+        <argument
+            android:name="comicClicked"
+            app:argType="boolean"
+            android:defaultValue="false" />
     </fragment>
 
 </navigation>

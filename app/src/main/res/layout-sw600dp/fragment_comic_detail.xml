@@ -11,32 +11,27 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent" />
 
-    <LinearLayout
+    <ImageButton
+        android:id="@+id/ibStar"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:orientation="vertical"
+        android:layout_margin="@dimen/medium"
+        android:background="?colorPrimary"
+        android:padding="@dimen/small"
+        android:src="@drawable/ic_star"
+        android:visibility="gone"
+        android:tint="?android:textColorPrimaryInverse"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintTop_toTopOf="parent">
+        app:layout_constraintTop_toTopOf="parent" />
 
-        <ImageButton
-            android:id="@+id/homeButton"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_margin="@dimen/medium"
-            android:background="?colorPrimary"
-            android:tint="?android:textColorPrimaryInverse"
-            android:padding="@dimen/small"
-            android:src="@drawable/ic_home" />
-
-        <ImageButton
-            android:id="@+id/ibStar"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_margin="@dimen/medium"
-            android:background="?colorPrimary"
-            android:tint="?android:textColorPrimaryInverse"
-            android:padding="@dimen/small"
-            android:src="@drawable/ic_star" />
-    </LinearLayout>
+    <include
+        android:id="@+id/incStateView"
+        layout="@layout/comic_list_state_view"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>

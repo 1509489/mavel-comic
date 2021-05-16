@@ -25,5 +25,9 @@
         <argument
             android:name="comicId"
             app:argType="string" />
+        <argument
+            android:name="comicClicked"
+            app:argType="boolean"
+            android:defaultValue="false" />
     </fragment>
 </navigation>

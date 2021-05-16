@@ -53,14 +53,14 @@ class ComicListFragment : Fragment() {
     }
 
     private fun onComicClick(detailFragmentContainer: View?): (Comic) -> Unit = { comic ->
-        val bundle = Bundle()
-        bundle.putString(
-            ComicDetailFragment.ARG_COMIC_ID,
-            comic.id
-        )
+        val bundle = Bundle().apply {
+            putBoolean(ComicDetailFragment.ARG_COMIC_CLICKED, true)
+            putString(ComicDetailFragment.ARG_COMIC_ID, comic.id)
+        }
         if (detailFragmentContainer != null) {
             detailFragmentContainer.findNavController()
                 .navigate(R.id.fragment_item_detail, bundle)
+            binding.guideline?.setGuidelinePercent(0.4f)
         } else {
             findNavController().navigate(R.id.comic_detail_fragment, bundle)
         }

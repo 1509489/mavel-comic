@@ -28,7 +28,7 @@
         android:layout_width="0dp"
         android:layout_height="match_parent"
         android:orientation="vertical"
-        app:layout_constraintGuide_percent="0.4" />
+        app:layout_constraintGuide_percent="1" />
 
     <androidx.fragment.app.FragmentContainerView
         android:id="@+id/comic_detail_nav_container"
