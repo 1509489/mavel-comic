@@ -3,24 +3,27 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:id="@+id/nav_graph"
-    app:startDestination="@id/item_list_fragment">
+    app:startDestination="@id/comic_list_fragment">
 
     <fragment
-        android:id="@+id/item_list_fragment"
+        android:id="@+id/comic_list_fragment"
         android:name="com.pixelart.mavelcomics.ui.comiclist.ComicListFragment"
         android:label="ItemListFragment">
         <action
-            android:id="@+id/show_item_detail"
-            app:destination="@id/item_detail_fragment" />
+            android:id="@+id/show_comic_detail"
+            app:destination="@id/comic_detail_fragment"
+            app:enterAnim="@android:anim/fade_in"
+            app:exitAnim="@android:anim/fade_out"
+            app:popEnterAnim="@android:anim/fade_in"
+            app:popExitAnim="@android:anim/fade_out" />
     </fragment>
     <fragment
-        android:id="@+id/item_detail_fragment"
+        android:id="@+id/comic_detail_fragment"
         android:name="com.pixelart.mavelcomics.ui.comicdetail.ComicDetailFragment"
         android:label="item_detail"
         tools:layout="@layout/fragment_comic_detail">
         <argument
-            android:name="item_id"
-            android:defaultValue=""
+            android:name="comicId"
             app:argType="string" />
     </fragment>
 </navigation>

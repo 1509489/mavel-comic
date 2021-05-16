@@ -3,40 +3,53 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:id="@+id/item_list_container"
     android:layout_width="match_parent"
-    android:layout_height="match_parent">
+    android:layout_height="match_parent"
+    android:background="@drawable/home_background">
 
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/item_list"
         android:name="com.pixelart.mavelcomics.ComicListFragment"
         android:layout_width="0dp"
         android:layout_height="match_parent"
-        android:layout_marginStart="@dimen/container_margin"
-        android:layout_marginEnd="@dimen/container_margin"
-        app:layoutManager="LinearLayoutManager"
+        android:layout_marginTop="@dimen/medium"
+        android:layout_marginBottom="@dimen/medium"
+        app:layoutManager="androidx.recyclerview.widget.GridLayoutManager"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toStartOf="@id/guideline"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent"
+        app:spanCount="5"
         tools:context="com.pixelart.mavelcomics.com.pixelart.ui.MainActivity"
-        tools:listitem="@layout/item_list_content" />
+        tools:itemCount="40"
+        tools:listitem="@layout/comic_list_item" />
 
     <androidx.constraintlayout.widget.Guideline
         android:id="@+id/guideline"
         android:layout_width="0dp"
         android:layout_height="match_parent"
         android:orientation="vertical"
-        app:layout_constraintGuide_begin="@dimen/item_width" />
+        app:layout_constraintGuide_percent="0.4" />
 
     <androidx.fragment.app.FragmentContainerView
         android:id="@+id/comic_detail_nav_container"
         android:name="androidx.navigation.fragment.NavHostFragment"
         android:layout_width="0dp"
         android:layout_height="match_parent"
-        android:layout_marginStart="@dimen/container_margin"
         app:defaultNavHost="false"
         app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toEndOf="@id/guideline"
         app:layout_constraintTop_toTopOf="parent"
         app:navGraph="@navigation/sub_nav_graph" />
+
+    <include
+        android:id="@+id/incStateView"
+        layout="@layout/comic_list_state_view"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>

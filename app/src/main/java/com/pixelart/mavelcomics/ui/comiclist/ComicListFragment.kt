@@ -1,165 +1,102 @@
 package com.pixelart.mavelcomics.ui.comiclist
 
-import android.os.Build
 import android.os.Bundle
-import android.view.KeyEvent
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.TextView
-import android.widget.Toast
-import androidx.core.view.ViewCompat
+import androidx.core.view.isVisible
 import androidx.fragment.app.Fragment
+import androidx.fragment.app.viewModels
+import androidx.lifecycle.Observer
 import androidx.navigation.findNavController
-import androidx.recyclerview.widget.RecyclerView
-import com.pixelart.mavelcomics.ui.comicdetail.ComicDetailFragment
+import androidx.navigation.fragment.findNavController
+import androidx.paging.LoadState
+import androidx.recyclerview.widget.GridLayoutManager
 import com.pixelart.mavelcomics.R
-import com.pixelart.mavelcomics.placeholder.PlaceholderContent;
 import com.pixelart.mavelcomics.databinding.FragmentComicListBinding
-import com.pixelart.mavelcomics.databinding.ItemListContentBinding
+import com.pixelart.mavelcomics.models.Comic
+import com.pixelart.mavelcomics.ui.comicdetail.ComicDetailFragment
 import dagger.hilt.android.AndroidEntryPoint
 
 @AndroidEntryPoint
 class ComicListFragment : Fragment() {
-
-    /**
-     * Method to intercept global key events in the
-     * item list fragment to trigger keyboard shortcuts
-     * Currently provides a toast when Ctrl + Z and Ctrl + F
-     * are triggered
-     */
-    private val unhandledKeyEventListenerCompat =
-        ViewCompat.OnUnhandledKeyEventListenerCompat { v, event ->
-            if (event.keyCode == KeyEvent.KEYCODE_Z && event.isCtrlPressed) {
-                Toast.makeText(
-                    v.context,
-                    "Undo (Ctrl + Z) shortcut triggered",
-                    Toast.LENGTH_LONG
-                ).show()
-                true
-            } else if (event.keyCode == KeyEvent.KEYCODE_F && event.isCtrlPressed) {
-                Toast.makeText(
-                    v.context,
-                    "Find (Ctrl + F) shortcut triggered",
-                    Toast.LENGTH_LONG
-                ).show()
-                true
-            }
-            false
-        }
-
     private var _binding: FragmentComicListBinding? = null
-
-    // This property is only valid between onCreateView and
-    // onDestroyView.
     private val binding get() = _binding!!
+
+    private val viewModel: ComicListViewModel by viewModels()
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View? {
-
         _binding = FragmentComicListBinding.inflate(inflater, container, false)
         return binding.root
-
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-        ViewCompat.addOnUnhandledKeyEventListener(view, unhandledKeyEventListenerCompat)
-
-        val recyclerView: RecyclerView = binding.itemList
+        binding.itemList.apply {
+            this.layoutManager = GridAutoFitLayoutManager(
+                requireContext(),
+                150,
+                GridLayoutManager.HORIZONTAL,
+                false
+            )
+            setHasFixedSize(true)
+        }
 
         // Leaving this not using view binding as it relies on if the view is visible the current
         // layout configuration (layout, layout-sw600dp)
-        val itemDetailFragmentContainer: View? = view.findViewById(R.id.comic_detail_nav_container)
-
-        /** Click Listener to trigger navigation based on if you have
-         * a single pane layout or two pane layout
-         */
-        val onClickListener = View.OnClickListener { itemView ->
-            val item = itemView.tag as PlaceholderContent.PlaceholderItem
-            val bundle = Bundle()
-            bundle.putString(
-                ComicDetailFragment.ARG_ITEM_ID,
-                item.id
-            )
-            if (itemDetailFragmentContainer != null) {
-                itemDetailFragmentContainer.findNavController()
-                    .navigate(R.id.fragment_item_detail, bundle)
-            } else {
-                itemView.findNavController().navigate(R.id.show_item_detail, bundle)
-            }
-        }
-
-        /**
-         * Context click listener to handle Right click events
-         * from mice and trackpad input to provide a more native
-         * experience on larger screen devices
-         */
-        val onContextClickListener = View.OnContextClickListener { v ->
-            val item = v.tag as PlaceholderContent.PlaceholderItem
-            Toast.makeText(
-                v.context,
-                "Context click of item " + item.id,
-                Toast.LENGTH_LONG
-            ).show()
-            true
-        }
-        setupRecyclerView(recyclerView, onClickListener, onContextClickListener)
+        val detailFragmentContainer: View? = view.findViewById(R.id.comic_detail_nav_container)
+        observeComics(detailFragmentContainer)
     }
 
-    private fun setupRecyclerView(
-        recyclerView: RecyclerView,
-        onClickListener: View.OnClickListener,
-        onContextClickListener: View.OnContextClickListener
-    ) {
-
-        recyclerView.adapter = SimpleItemRecyclerViewAdapter(
-            PlaceholderContent.ITEMS,
-            onClickListener,
-            onContextClickListener
+    private fun onComicClick(detailFragmentContainer: View?): (Comic) -> Unit = { comic ->
+        val bundle = Bundle()
+        bundle.putString(
+            ComicDetailFragment.ARG_COMIC_ID,
+            comic.id
         )
+        if (detailFragmentContainer != null) {
+            detailFragmentContainer.findNavController()
+                .navigate(R.id.fragment_item_detail, bundle)
+        } else {
+            findNavController().navigate(R.id.comic_detail_fragment, bundle)
+        }
     }
 
-    class SimpleItemRecyclerViewAdapter(
-        private val values: List<PlaceholderContent.PlaceholderItem>,
-        private val onClickListener: View.OnClickListener,
-        private val onContextClickListener: View.OnContextClickListener
-    ) :
-        RecyclerView.Adapter<SimpleItemRecyclerViewAdapter.ViewHolder>() {
+    private fun observeComics(detailFragmentContainer: View?) {
+        val comicAdapter = ComicListPagingAdapter(onComicClick(detailFragmentContainer))
+        binding.itemList.adapter = comicAdapter.withLoadStateHeaderAndFooter(
+            header = ComicsLoadStateAdapter { comicAdapter.retry() },
+            footer = ComicsLoadStateAdapter { comicAdapter.retry() }
+        )
 
-        override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
+        comicAdapter.addLoadStateListener { loadState ->
+            val isListEmpty = loadState.source.refresh is LoadState.NotLoading &&
+                    comicAdapter.itemCount == 0
+            val errorState = loadState.source.refresh is LoadState.Error
 
-            val binding =
-                ItemListContentBinding.inflate(LayoutInflater.from(parent.context), parent, false)
-            return ViewHolder(binding)
+            binding.apply {
+                itemList.isVisible = loadState.source.refresh is LoadState.NotLoading && !isListEmpty
 
-        }
+                incStateView.apply {
+                    pbLoading.isVisible = loadState.source.refresh is LoadState.Loading
+                    btnRetry.isVisible = loadState.source.refresh is LoadState.Error
+                    tvMessage.isVisible = errorState || isListEmpty
 
-        override fun onBindViewHolder(holder: ViewHolder, position: Int) {
-            val item = values[position]
-            holder.idView.text = item.id
-            holder.contentView.text = item.content
-
-            with(holder.itemView) {
-                tag = item
-                setOnClickListener(onClickListener)
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-                    setOnContextClickListener(onContextClickListener)
+                    tvMessage.text = if (errorState) {
+                        (loadState.source.refresh as LoadState.Error).error.localizedMessage
+                    } else getString(R.string.no_results)
+                    btnRetry.setOnClickListener { comicAdapter.retry() }
                 }
             }
         }
 
-        override fun getItemCount() = values.size
-
-        inner class ViewHolder(binding: ItemListContentBinding) :
-            RecyclerView.ViewHolder(binding.root) {
-            val idView: TextView = binding.idText
-            val contentView: TextView = binding.content
-        }
-
+        viewModel.fetchComics().observe(viewLifecycleOwner, Observer { comicPagingData ->
+            comicAdapter.submitData(viewLifecycleOwner.lifecycle, comicPagingData)
+        })
     }
 
     override fun onDestroyView() {
